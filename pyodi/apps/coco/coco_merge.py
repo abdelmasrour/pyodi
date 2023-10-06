@@ -17,10 +17,29 @@ and adding all existent categories.
 """  # noqa: E501
 import json
 from typing import Any, Dict, Optional
-
+import re
 from loguru import logger
 
+def is_begining_with_upper(classe_name: str)-> bool:
+    """"This function return if classe_name begin with upper letter"""
 
+    pattern = "^[A-Z][a-zA-Z]*$"
+    return bool(re.match(pattern, classe_name))
+
+def is_class_in_azuria_zoo(classe_name: str)->bool:
+    global  azuria_zoo_classes
+    azuria_zoo_classes = {"Lying-Person":"Fall","Pederstrien":"Person"}
+    if classe_name in azuria_zoo_classes:
+        return True 
+    return False
+def classe_name_substitution(classe_name : str)-> str : 
+     """This function transform classe_name to it's equivalent in azuria_zoo_classes"""
+
+     if not is_begining_with_upper(classe_name):
+         classe_name =  classe_name[0].upper() + classe_name[1:]
+     if is_class_in_azuria_zoo(classe_name):
+         classe_name = azuria_zoo_classes[classe_name]
+     return classe_name 
 @logger.catch(reraise=True)
 def coco_merge(
     input_extend: str,
@@ -40,7 +59,15 @@ def coco_merge(
         data_extend = json.load(f)
     with open(input_add, "r") as f:
         data_add = json.load(f)
-
+    category_add =  data_add['categories']
+    category_extend = data_extend['categories']
+    for i in range(len(category_add)):
+        if not is_begining_with_upper(category_add[i]['name']) or  is_class_in_azuria_zoo(category_add[i]['name']):
+             category_add[i]['name']= classe_name_substitution(category_add[i]['name'])
+    for i in range(len(category_extend)):
+        if not is_begining_with_upper(category_extend[i]['name']) or  is_class_in_azuria_zoo(category_extend[i]['name']):
+             category_extend[i]['name']= classe_name_substitution(category_extend[i]['name'])
+             
     output: Dict[str, Any] = {
         k: data_extend[k] for k in data_extend if k not in ("images", "annotations")
     }
